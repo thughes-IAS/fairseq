@@ -8,6 +8,7 @@ Translate raw text with a trained model. Batches data on-the-fly.
 """
 
 from collections import namedtuple
+import re
 import fileinput
 import math
 import sys
@@ -30,7 +31,8 @@ def buffered_read(input, buffer_size):
     buffer = []
     with fileinput.input(files=[input], openhook=fileinput.hook_encoded("utf-8")) as h:
         for src_str in h:
-            buffer.append(src_str.strip())
+            # buffer.append(src_str.strip())
+            buffer.extend(re.split('\.|\n',src_str.strip()))
             if len(buffer) >= buffer_size:
                 yield buffer
                 buffer = []
@@ -172,11 +174,9 @@ def main(args):
                     remove_bpe=args.remove_bpe,
                 )
                 detok_hypo_str = decode_fn(hypo_str)
-                score = hypo['score'] / math.log(2)  # convert to base 2
-                # original hypothesis (after tokenization and BPE)
                 # detokenized hypothesis
                 #
-                print('D-{}\t{}\t{}'.format(id, score, detok_hypo_str))
+                print(detok_hypo_str)
 
         # update running id counter
         start_id += len(inputs)
