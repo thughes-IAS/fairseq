@@ -9,7 +9,6 @@ Translate raw text with a trained model. Batches data on-the-fly.
 
 from collections import namedtuple
 import fileinput
-import logging
 import math
 import sys
 import os
@@ -21,14 +20,6 @@ import torch
 from fairseq import checkpoint_utils, distributed_utils, options, tasks, utils
 from fairseq.data import encoders
 
-
-logging.basicConfig(
-    format='%(asctime)s | %(levelname)s | %(name)s | %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-    level=logging.INFO,
-    stream=sys.stdout,
-)
-logger = logging.getLogger('fairseq_cli.interactive')
 
 
 Batch = namedtuple('Batch', 'ids src_tokens src_lengths')
@@ -83,8 +74,6 @@ def main(args):
     assert not args.max_sentences or args.max_sentences <= args.buffer_size, \
         '--max-sentences/--batch-size cannot be larger than --buffer-size'
 
-    logger.info(args)
-
     # Fix seed for stochastic decoding
     if args.seed is not None and not args.no_seed_provided:
         np.random.seed(args.seed)
@@ -96,7 +85,6 @@ def main(args):
     task = tasks.setup_task(args)
 
     # Load ensemble
-    logger.info('loading model(s) from {}'.format(args.path))
     models, _model_args = checkpoint_utils.load_model_ensemble(
         args.path.split(os.pathsep),
         arg_overrides=eval(args.model_overrides),
@@ -141,15 +129,12 @@ def main(args):
     # (None if no unknown word replacement, empty if no path to align dictionary)
     align_dict = utils.load_align_dict(args.replace_unk)
 
+
     max_positions = utils.resolve_max_positions(
         task.max_positions(),
         *[model.max_positions() for model in models]
     )
 
-    if args.buffer_size > 1:
-        logger.info('Sentence buffer size: %s', args.buffer_size)
-    logger.info('NOTE: hypothesis and token scores are output in base 2')
-    logger.info('Type the input sentence and press return:')
     start_id = 0
     for inputs in buffered_read(args.input, args.buffer_size):
         results = []
@@ -175,7 +160,6 @@ def main(args):
         for id, src_tokens, hypos in sorted(results, key=lambda x: x[0]):
             if src_dict is not None:
                 src_str = src_dict.string(src_tokens, args.remove_bpe)
-                print('S-{}\t{}'.format(id, src_str))
 
             # Process top predictions
             for hypo in hypos[:min(len(hypos), args.nbest)]:
@@ -191,6 +175,7 @@ def main(args):
                 score = hypo['score'] / math.log(2)  # convert to base 2
                 # original hypothesis (after tokenization and BPE)
                 # detokenized hypothesis
+                #
                 print('D-{}\t{}\t{}'.format(id, score, detok_hypo_str))
 
         # update running id counter
