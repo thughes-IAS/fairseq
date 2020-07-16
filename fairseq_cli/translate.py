@@ -34,12 +34,14 @@ def buffered_read(input, buffer_size):
         for src_str in h:
 
             # buffer.append(src_str.strip())
+            # for fragment in re.split('\.|\n',src_str.rstrip()):
             for fragment in re.split('\.|\n',src_str.rstrip()):
                 if fragment:
                     buffer.append(fragment)
-            if len(buffer) >= buffer_size:
-                yield buffer
-                buffer = []
+
+                if len(buffer) >= buffer_size:
+                    yield buffer
+                    buffer = []
 
     if len(buffer) > 0:
         yield buffer
@@ -144,7 +146,7 @@ def main(args):
     start_id = 0
     for inputs in buffered_read(args.input, args.buffer_size):
         results = []
-        for batch in tqdm(make_batches(inputs, args, task, max_positions, encode_fn)):
+        for batch in make_batches(inputs, args, task, max_positions, encode_fn):
             src_tokens = batch.src_tokens
             src_lengths = batch.src_lengths
             if use_cuda:
