@@ -20,6 +20,7 @@ import torch
 
 from fairseq import checkpoint_utils, distributed_utils, options, tasks, utils
 from fairseq.data import encoders
+from tqdm import tqdm
 
 
 
@@ -31,8 +32,11 @@ def buffered_read(input, buffer_size):
     buffer = []
     with fileinput.input(files=[input], openhook=fileinput.hook_encoded("utf-8")) as h:
         for src_str in h:
+
             # buffer.append(src_str.strip())
-            buffer.extend(re.split('\.|\n',src_str.strip()))
+            for fragment in re.split('\.|\n',src_str.rstrip()):
+                if fragment:
+                    buffer.append(fragment)
             if len(buffer) >= buffer_size:
                 yield buffer
                 buffer = []
@@ -140,7 +144,7 @@ def main(args):
     start_id = 0
     for inputs in buffered_read(args.input, args.buffer_size):
         results = []
-        for batch in make_batches(inputs, args, task, max_positions, encode_fn):
+        for batch in tqdm(make_batches(inputs, args, task, max_positions, encode_fn)):
             src_tokens = batch.src_tokens
             src_lengths = batch.src_lengths
             if use_cuda:
@@ -174,8 +178,8 @@ def main(args):
                     remove_bpe=args.remove_bpe,
                 )
                 detok_hypo_str = decode_fn(hypo_str)
-                # detokenized hypothesis
-                #
+
+
                 print(detok_hypo_str)
 
         # update running id counter
