@@ -27,6 +27,19 @@ from tqdm import tqdm
 Batch = namedtuple('Batch', 'ids src_tokens src_lengths')
 Translation = namedtuple('Translation', 'src_str hypos pos_scores alignments')
 
+def page_read(input,*args):
+    buffer = []
+    with fileinput.input(files=[input], openhook=fileinput.hook_encoded("utf-8")) as h:
+        for src_str in h:
+
+            # buffer.append(src_str.strip())
+            for fragment in re.split('\.|\n',src_str.rstrip()):
+                if fragment and fragment != ' ':
+                    buffer.append(fragment)
+
+            yield buffer
+            buffer = []
+
 
 def buffered_read(input, buffer_size):
     buffer = []
@@ -37,9 +50,9 @@ def buffered_read(input, buffer_size):
             for fragment in re.split('\.|\n',src_str.rstrip()):
                 if fragment:
                     buffer.append(fragment)
-            if len(buffer) >= buffer_size:
-                yield buffer
-                buffer = []
+        if len(buffer) >= buffer_size:
+            yield buffer
+            buffer = []
 
     if len(buffer) > 0:
         yield buffer
@@ -142,9 +155,13 @@ def main(args):
     )
 
     start_id = 0
-    for inputs in buffered_read(args.input, args.buffer_size):
+    # for inputs in buffered_read(args.input, args.buffer_size):
+
+    for inputs in page_read(args.input, args.buffer_size):
+
         results = []
-        for batch in tqdm(make_batches(inputs, args, task, max_positions, encode_fn)):
+        # for batch in tqdm(make_batches(inputs, args, task, max_positions, encode_fn)):
+        for batch in make_batches(inputs, args, task, max_positions, encode_fn):
             src_tokens = batch.src_tokens
             src_lengths = batch.src_lengths
             if use_cuda:
@@ -169,6 +186,8 @@ def main(args):
 
             # Process top predictions
             for hypo in hypos[:min(len(hypos), args.nbest)]:
+
+
                 hypo_tokens, hypo_str, alignment = utils.post_process_prediction(
                     hypo_tokens=hypo['tokens'].int().cpu(),
                     src_str=src_str,
@@ -178,7 +197,6 @@ def main(args):
                     remove_bpe=args.remove_bpe,
                 )
                 detok_hypo_str = decode_fn(hypo_str)
-
 
                 print(detok_hypo_str)
 
@@ -193,4 +211,6 @@ def cli_main():
 
 
 if __name__ == '__main__':
+
+
     cli_main()
