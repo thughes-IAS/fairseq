@@ -172,9 +172,15 @@ def replace_unk(hypo_str, src_str, alignment, align_dict, unk):
     hypo_tokens = tokenizer.tokenize_line(hypo_str)
     # TODO: Very rare cases where the replacement is '<eos>' should be handled gracefully
     src_tokens = tokenizer.tokenize_line(src_str) + ["<eos>"]
+
+
     for i, ht in enumerate(hypo_tokens):
         if ht == unk:
-            src_token = src_tokens[alignment[i]]
+
+            try:
+                src_token = src_tokens[alignment[i][0]]
+            except IndexError:
+                src_token = unk
             # Either take the corresponding value in the aligned dictionary or just copy the original value.
             hypo_tokens[i] = align_dict.get(src_token, src_token)
     return " ".join(hypo_tokens)
@@ -184,6 +190,7 @@ def post_process_prediction(
     hypo_tokens, src_str, alignment, align_dict, tgt_dict, remove_bpe=None, extra_symbols_to_ignore=None
 ):
     hypo_str = tgt_dict.string(hypo_tokens, remove_bpe, extra_symbols_to_ignore=extra_symbols_to_ignore)
+
     if align_dict is not None:
         hypo_str = replace_unk(
             hypo_str, src_str, alignment, align_dict, tgt_dict.unk_string()

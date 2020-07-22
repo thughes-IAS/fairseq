@@ -132,6 +132,7 @@ def main(args):
     tokenizer = encoders.build_tokenizer(args)
     bpe = encoders.build_bpe(args)
 
+
     def encode_fn(x):
         if tokenizer is not None:
             x = tokenizer.encode(x)
@@ -151,6 +152,8 @@ def main(args):
     align_dict = utils.load_align_dict(args.replace_unk)
 
 
+
+
     max_positions = utils.resolve_max_positions(
         task.max_positions(),
         *[model.max_positions() for model in models]
@@ -159,7 +162,13 @@ def main(args):
     start_id = 0
     # for inputs in buffered_read(args.input, args.buffer_size):
 
-    for inputs in page_read(args.input, args.buffer_size):
+    with open(args.input) as ofo:
+        total=len(ofo.read().splitlines())
+
+
+
+
+    for inputs in tqdm(page_read(args.input, args.buffer_size),total=total):
 
         results = []
         for batch in tqdm(make_batches(inputs, args, task, max_positions, encode_fn)):
