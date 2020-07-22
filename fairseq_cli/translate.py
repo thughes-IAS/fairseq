@@ -7,33 +7,35 @@
 Translate raw text with a trained model. Batches data on-the-fly.
 """
 
-from collections import namedtuple
-import re
+# Standard Library
 import fileinput
 import math
-import sys
 import os
+import re
+import sys
+from collections import namedtuple
 
+# Third Party
 import numpy as np
-
 import torch
-
-from fairseq import checkpoint_utils, distributed_utils, options, tasks, utils
-from fairseq.data import encoders
 from tqdm import tqdm
 
-
+# First Party
+from fairseq import checkpoint_utils, distributed_utils, options, tasks, utils
+from fairseq.data import encoders
 
 Batch = namedtuple('Batch', 'ids src_tokens src_lengths')
 Translation = namedtuple('Translation', 'src_str hypos pos_scores alignments')
 
-def page_read(input,*args):
+
+def page_read(input, *args):
     buffer = []
-    with fileinput.input(files=[input], openhook=fileinput.hook_encoded("utf-8")) as h:
+    with fileinput.input(files=[input],
+                         openhook=fileinput.hook_encoded("utf-8")) as h:
         for src_str in h:
 
             # buffer.append(src_str.strip())
-            for fragment in re.split('\.|\n',src_str.rstrip()):
+            for fragment in re.split('\.|\n', src_str.rstrip()):
                 if fragment and fragment != ' ':
                     buffer.append(fragment)
 
@@ -43,12 +45,13 @@ def page_read(input,*args):
 
 def buffered_read(input, buffer_size):
     buffer = []
-    with fileinput.input(files=[input], openhook=fileinput.hook_encoded("utf-8")) as h:
+    with fileinput.input(files=[input],
+                         openhook=fileinput.hook_encoded("utf-8")) as h:
         for src_str in h:
 
             # buffer.append(src_str.strip())
             # for fragment in re.split('\.|\n',src_str.rstrip()):
-            for fragment in re.split('\.|\n',src_str.rstrip()):
+            for fragment in re.split('\.|\n', src_str.rstrip()):
                 if fragment:
                     buffer.append(fragment)
 
@@ -62,9 +65,8 @@ def buffered_read(input, buffer_size):
 
 def make_batches(lines, args, task, max_positions, encode_fn):
     tokens = [
-        task.source_dictionary.encode_line(
-            encode_fn(src_str), add_if_not_exist=False
-        ).long()
+        task.source_dictionary.encode_line(encode_fn(src_str),
+                                           add_if_not_exist=False).long()
         for src_str in lines
     ]
     lengths = [t.numel() for t in tokens]
@@ -78,7 +80,8 @@ def make_batches(lines, args, task, max_positions, encode_fn):
     for batch in itr:
         yield Batch(
             ids=batch['id'],
-            src_tokens=batch['net_input']['src_tokens'], src_lengths=batch['net_input']['src_lengths'],
+            src_tokens=batch['net_input']['src_tokens'],
+            src_lengths=batch['net_input']['src_lengths'],
         )
 
 
@@ -132,7 +135,6 @@ def main(args):
     tokenizer = encoders.build_tokenizer(args)
     bpe = encoders.build_bpe(args)
 
-
     def encode_fn(x):
         if tokenizer is not None:
             x = tokenizer.encode(x)
@@ -151,28 +153,14 @@ def main(args):
     # (None if no unknown word replacement, empty if no path to align dictionary)
     align_dict = utils.load_align_dict(args.replace_unk)
 
-
-
-
     max_positions = utils.resolve_max_positions(
-        task.max_positions(),
-        *[model.max_positions() for model in models]
-    )
+        task.max_positions(), *[model.max_positions() for model in models])
 
     start_id = 0
-    # for inputs in buffered_read(args.input, args.buffer_size):
-
-    with open(args.input) as ofo:
-        total=len(ofo.read().splitlines())
-
-
-
-
-    for inputs in tqdm(page_read(args.input, args.buffer_size),total=total):
-
+    for inputs in buffered_read(args.input, args.buffer_size):
         results = []
-        for batch in tqdm(make_batches(inputs, args, task, max_positions, encode_fn)):
-        # for batch in make_batches(inputs, args, task, max_positions, encode_fn):
+        for batch in make_batches(inputs, args, task, max_positions,
+                                  encode_fn):
             src_tokens = batch.src_tokens
             src_lengths = batch.src_lengths
             if use_cuda:
@@ -186,7 +174,8 @@ def main(args):
                 },
             }
             translations = task.inference_step(generator, models, sample)
-            for i, (id, hypos) in enumerate(zip(batch.ids.tolist(), translations)):
+            for i, (id,
+                    hypos) in enumerate(zip(batch.ids.tolist(), translations)):
                 src_tokens_i = utils.strip_pad(src_tokens[i], tgt_dict.pad())
                 results.append((start_id + id, src_tokens_i, hypos))
 
@@ -197,17 +186,22 @@ def main(args):
 
             # Process top predictions
             for hypo in hypos[:min(len(hypos), args.nbest)]:
-
-
                 hypo_tokens, hypo_str, alignment = utils.post_process_prediction(
                     hypo_tokens=hypo['tokens'].int().cpu(),
-                    src_str=src_str,
+                    src_str=inputs[0],
+                    # src_str=src_str,
                     alignment=hypo['alignment'],
                     align_dict=align_dict,
                     tgt_dict=tgt_dict,
                     remove_bpe=args.remove_bpe,
                 )
                 detok_hypo_str = decode_fn(hypo_str)
+                score = hypo['score'] / math.log(2)  # convert to base 2
+                # original hypothesis (after tokenization and BPE)
+                # detokenized hypothesis
+
+
+
 
                 print(detok_hypo_str)
 
@@ -222,6 +216,5 @@ def cli_main():
 
 
 if __name__ == '__main__':
-
 
     cli_main()
