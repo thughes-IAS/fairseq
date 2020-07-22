@@ -173,6 +173,8 @@ def main(args):
 
         # sort output to match input order
         for id, src_tokens, hypos in sorted(results, key=lambda x: x[0]):
+
+
             if src_dict is not None:
                 src_str = src_dict.string(src_tokens, args.remove_bpe)
                 print('S-{}\t{}'.format(id, src_str))

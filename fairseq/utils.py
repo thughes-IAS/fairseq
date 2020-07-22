@@ -174,6 +174,7 @@ def replace_unk(hypo_str, src_str, alignment, align_dict, unk):
     src_tokens = tokenizer.tokenize_line(src_str) + ["<eos>"]
     for i, ht in enumerate(hypo_tokens):
         if ht == unk:
+
             src_token = src_tokens[alignment[i]]
             # Either take the corresponding value in the aligned dictionary or just copy the original value.
             hypo_tokens[i] = align_dict.get(src_token, src_token)
