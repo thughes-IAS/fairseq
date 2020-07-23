@@ -183,9 +183,8 @@ def replace_unk(hypo_str, src_str, alignment, align_dict, unk):
             except IndexError:
                 src_token = ''
 
-
-
             hypo_tokens[i] =src_token
+
 
 
     return " ".join(hypo_tokens)

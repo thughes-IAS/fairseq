@@ -32,15 +32,13 @@ def page_read(input, *args):
     buffer = []
     with fileinput.input(files=[input],
                          openhook=fileinput.hook_encoded("utf-8")) as h:
-        for src_str in h:
+        for fragment in h:
+            if fragment and fragment != ' ':
+                buffer.append(fragment)
 
-            # buffer.append(src_str.strip())
-            for fragment in re.split('\.|\n', src_str.rstrip()):
-                if fragment and fragment != ' ':
-                    buffer.append(fragment)
-
-            yield buffer
-            buffer = []
+            if buffer:
+                yield buffer
+                buffer = []
 
 
 def buffered_read(input, buffer_size):
@@ -157,7 +155,8 @@ def main(args):
         task.max_positions(), *[model.max_positions() for model in models])
 
     start_id = 0
-    for inputs in buffered_read(args.input, args.buffer_size):
+    for inputs in tqdm(page_read(args.input, args.buffer_size)):
+    # for inputs in tqdm(buffered_read(args.input, args.buffer_size)):
         results = []
         for batch in make_batches(inputs, args, task, max_positions,
                                   encode_fn):
