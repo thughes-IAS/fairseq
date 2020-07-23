@@ -183,20 +183,12 @@ def replace_unk(hypo_str, src_str, alignment, align_dict, unk):
             try:
                 src_token= src_tokens[alignment[i][0]]
             except IndexError:
-                src_token = unk
-
-
+                src_token = ''
 
             hypo_tokens[i] =src_token
 
 
 
-            # try:
-                # src_token = src_tokens[alignment[i][0]]
-            # except IndexError:
-                # src_token = unk
-            # # Either take the corresponding value in the aligned dictionary or just copy the original value.
-            # hypo_tokens[i] = align_dict.get(src_token, src_token)
     return " ".join(hypo_tokens)
 
 
