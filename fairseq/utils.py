@@ -112,6 +112,8 @@ def set_incremental_state(
 
 
 def load_align_dict(replace_unk):
+
+
     if replace_unk is None:
         align_dict = None
     elif isinstance(replace_unk, str) and len(replace_unk) > 0:
@@ -172,12 +174,20 @@ def replace_unk(hypo_str, src_str, alignment, align_dict, unk):
     hypo_tokens = tokenizer.tokenize_line(hypo_str)
     # TODO: Very rare cases where the replacement is '<eos>' should be handled gracefully
     src_tokens = tokenizer.tokenize_line(src_str) + ["<eos>"]
+
+
     for i, ht in enumerate(hypo_tokens):
         if ht == unk:
+            try:
+                src_token= src_tokens[alignment[i][0]]
+            except IndexError:
+                src_token = ''
 
-            src_token = src_tokens[alignment[i]]
-            # Either take the corresponding value in the aligned dictionary or just copy the original value.
-            hypo_tokens[i] = align_dict.get(src_token, src_token)
+
+
+            hypo_tokens[i] =src_token
+
+
     return " ".join(hypo_tokens)
 
 
@@ -185,6 +195,13 @@ def post_process_prediction(
     hypo_tokens, src_str, alignment, align_dict, tgt_dict, remove_bpe=None, extra_symbols_to_ignore=None
 ):
     hypo_str = tgt_dict.string(hypo_tokens, remove_bpe, extra_symbols_to_ignore=extra_symbols_to_ignore)
+
+
+
+
+
+
+
     if align_dict is not None:
         hypo_str = replace_unk(
             hypo_str, src_str, alignment, align_dict, tgt_dict.unk_string()
