@@ -178,8 +178,6 @@ def replace_unk(hypo_str, src_str, alignment, align_dict, unk):
 
     for i, ht in enumerate(hypo_tokens):
         if ht == unk:
-
-            # import ipdb;ipdb.set_trace()
             try:
                 src_token= src_tokens[alignment[i][0]]
             except IndexError:
