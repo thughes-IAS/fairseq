@@ -18,6 +18,7 @@ from collections import namedtuple
 # Third Party
 import numpy as np
 import torch
+import torch.nn.functional as F
 from tqdm import tqdm
 
 # First Party
@@ -176,6 +177,47 @@ def main(args):
                     'src_lengths': src_lengths,
                 },
             }
+
+            # encoder_out=models[0].encoder(src_tokens,src_lengths)
+            model = models[0]
+
+            # src_tokens: batch, steps
+
+            # batch, steps, encoder-embed-dim
+            token_embeddings = model.encoder.embed_tokens(src_tokens)
+
+            # batch, steps, encoder-embed-dim
+            position_embeddings = model.encoder.embed_positions(src_tokens)
+            input_embedding = token_embeddings + position_embeddings
+
+
+            
+            self=model
+
+            # batch, steps, encoder-size
+            fc1_out = model.encoder.fc1(input_embedding)
+
+            # steps, batch, encoder-size
+            inp = fc1_out.transpose(0,1)
+
+            conv1_out  = model.encoder.convolutions[0](inp)
+
+            activated1 = F.glu(conv1_out,dim=2)
+
+            residual1 = (inp + activated1)*(0.5**0.5)
+
+            conv2_out  = model.encoder.convolutions[1](residual1)
+
+
+
+
+
+            import ipdb;ipdb.set_trace()
+
+
+
+
+
             translations = task.inference_step(generator, models, sample)
             for i, (id,
                     hypos) in enumerate(zip(batch.ids.tolist(), translations)):

@@ -232,7 +232,12 @@ class FConvEncoder(FairseqEncoder):
 
         residuals = [x]
         # temporal convolutions
-        for proj, conv, res_layer in zip(self.projections, self.convolutions, self.residuals):
+        zipped = list(zip(self.projections, self.convolutions, self.residuals))
+        for proj, conv, res_layer in zipped:
+        # for proj, conv, res_layer in zip(self.projections, self.convolutions, self.residuals):
+
+
+
             if res_layer > 0:
                 residual = residuals[-res_layer]
                 residual = residual if proj is None else proj(residual)
@@ -243,19 +248,31 @@ class FConvEncoder(FairseqEncoder):
                 x = x.masked_fill(encoder_padding_mask.unsqueeze(-1), 0)
 
             x = self.dropout_module(x)
+
             if conv.kernel_size[0] % 2 == 1:
                 # padding is implicit in the conv
+
                 x = conv(x)
             else:
                 padding_l = (conv.kernel_size[0] - 1) // 2
                 padding_r = conv.kernel_size[0] // 2
                 x = F.pad(x, (0, 0, 0, 0, padding_l, padding_r))
                 x = conv(x)
+
             x = F.glu(x, dim=2)
+
+
+
+
+            import ipdb;ipdb.set_trace()
 
             if residual is not None:
                 x = (x + residual) * math.sqrt(0.5)
             residuals.append(x)
+            import ipdb;ipdb.set_trace()
+
+        import ipdb;ipdb.set_trace()
+
 
         # T x B x C -> B x T x C
         x = x.transpose(1, 0)
