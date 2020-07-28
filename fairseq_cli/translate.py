@@ -33,8 +33,10 @@ def page_read(input, *args):
     with fileinput.input(files=[input],
                          openhook=fileinput.hook_encoded("utf-8")) as h:
         for fragment in h:
-            if fragment and fragment != ' ':
-                buffer.append(fragment)
+            clean_frag = fragment.rstrip()
+
+            if clean_frag and clean_frag != ' ':
+                buffer.append(clean_frag)
 
             if buffer:
                 yield buffer
@@ -156,6 +158,8 @@ def main(args):
 
     start_id = 0
     for inputs in tqdm(page_read(args.input, args.buffer_size)):
+
+
     # for inputs in tqdm(buffered_read(args.input, args.buffer_size)):
         results = []
         for batch in make_batches(inputs, args, task, max_positions,
