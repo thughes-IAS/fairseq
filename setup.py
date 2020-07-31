@@ -152,6 +152,7 @@ setup(
             'fairseq-generate = fairseq_cli.generate:cli_main',
             'fairseq-interactive = fairseq_cli.interactive:cli_main',
             'fairseq-translate = fairseq_cli.translate:cli_main',
+            'fairseq-batch-translate = fairseq_cli.translate_batch:cli_main',
             'fairseq-preprocess = fairseq_cli.preprocess:cli_main',
             'fairseq-score = fairseq_cli.score:cli_main',
             'fairseq-train = fairseq_cli.train:cli_main',
