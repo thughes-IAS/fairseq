@@ -65,11 +65,19 @@ def buffered_read(input, buffer_size):
 
 
 def make_batches(lines, args, task, max_positions, encode_fn):
+
+
+    tokenized = [encode_fn(src_str) for src_str in lines]
+
+
+
+
     tokens = [
-        task.source_dictionary.encode_line(encode_fn(src_str),
+        task.source_dictionary.encode_line(tokenized_line,
                                            add_if_not_exist=False).long()
-        for src_str in lines
+        for tokenized_line in tokenized
     ]
+
     lengths = [t.numel() for t in tokens]
     itr = task.get_batch_iterator(
         dataset=task.build_dataset_for_inference(tokens, lengths),
@@ -83,7 +91,7 @@ def make_batches(lines, args, task, max_positions, encode_fn):
             ids=batch['id'],
             src_tokens=batch['net_input']['src_tokens'],
             src_lengths=batch['net_input']['src_lengths'],
-        )
+        ),tokenized
 
 
 def main(args):
@@ -158,9 +166,14 @@ def main(args):
         task.max_positions(), *[model.max_positions() for model in models])
 
     start_id = 0
-    for inputs in tqdm(buffered_read(args.input, args.buffer_size)):
+
+    for inputs in buffered_read(args.input, args.buffer_size):
         results = []
-        for batch in make_batches(inputs, args, task, max_positions, encode_fn):
+        for batch,tokenized in make_batches(inputs, args, task, max_positions, encode_fn):
+
+
+
+
             src_tokens = batch.src_tokens
             src_lengths = batch.src_lengths
             if use_cuda:
@@ -174,12 +187,14 @@ def main(args):
                 },
             }
             translations = task.inference_step(generator, models, sample)
+            print(len(translations))
             for i, (id, hypos) in enumerate(zip(batch.ids.tolist(), translations)):
                 src_tokens_i = utils.strip_pad(src_tokens[i], tgt_dict.pad())
-                results.append((start_id + id, src_tokens_i, hypos))
+                results.append((start_id + id, src_tokens_i, hypos, id))
 
         # sort output to match input order
-        for id, src_tokens, hypos in sorted(results, key=lambda x: x[0]):
+
+        for id, src_tokens, hypos, position_in_batch in sorted(results, key=lambda x: x[0]):
 
 
             if src_dict is not None:
@@ -194,6 +209,7 @@ def main(args):
                     align_dict=align_dict,
                     tgt_dict=tgt_dict,
                     remove_bpe=args.remove_bpe,
+                    tokenized_line=tokenized[position_in_batch]
                 )
                 detok_hypo_str = decode_fn(hypo_str)
                 score = hypo['score'] / math.log(2)  # convert to base 2
