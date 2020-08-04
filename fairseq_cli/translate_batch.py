@@ -186,6 +186,7 @@ def main(args):
                     'src_lengths': src_lengths,
                 },
             }
+
             translations = task.inference_step(generator, models, sample)
             print(len(translations))
             for i, (id, hypos) in enumerate(zip(batch.ids.tolist(), translations)):

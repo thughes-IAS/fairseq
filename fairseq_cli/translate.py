@@ -246,7 +246,6 @@ def main(args):
 
 
 
-
                 print(detok_hypo_str)
 
         # update running id counter

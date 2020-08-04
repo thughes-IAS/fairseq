@@ -214,6 +214,8 @@ class FConvEncoder(FairseqEncoder):
                 - **encoder_padding_mask** (ByteTensor): the positions of
                   padding elements of shape `(batch, src_len)`
         """
+
+
         # embed tokens and positions
         x = self.embed_tokens(src_tokens) + self.embed_positions(src_tokens)
         x = self.dropout_module(x)
