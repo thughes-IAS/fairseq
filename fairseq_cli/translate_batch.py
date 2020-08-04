@@ -158,13 +158,9 @@ def main(args):
         task.max_positions(), *[model.max_positions() for model in models])
 
     start_id = 0
-    for inputs in tqdm(page_read(args.input, args.buffer_size)):
-
-
-    # for inputs in tqdm(buffered_read(args.input, args.buffer_size)):
+    for inputs in tqdm(buffered_read(args.input, args.buffer_size)):
         results = []
-        for batch in make_batches(inputs, args, task, max_positions,
-                                  encode_fn):
+        for batch in make_batches(inputs, args, task, max_positions, encode_fn):
             src_tokens = batch.src_tokens
             src_lengths = batch.src_lengths
             if use_cuda:
@@ -177,54 +173,15 @@ def main(args):
                     'src_lengths': src_lengths,
                 },
             }
-
-            # encoder_out=models[0].encoder(src_tokens,src_lengths)
-            model = models[0]
-
-            # src_tokens: batch, steps
-
-            # batch, steps, encoder-embed-dim
-            token_embeddings = model.encoder.embed_tokens(src_tokens)
-
-            # batch, steps, encoder-embed-dim
-            position_embeddings = model.encoder.embed_positions(src_tokens)
-            input_embedding = token_embeddings + position_embeddings
-
-
-            
-            self=model
-
-            # batch, steps, encoder-size
-            fc1_out = model.encoder.fc1(input_embedding)
-
-            # steps, batch, encoder-size
-            inp = fc1_out.transpose(0,1)
-
-            conv1_out  = model.encoder.convolutions[0](inp)
-
-            activated1 = F.glu(conv1_out,dim=2)
-
-            residual1 = (inp + activated1)*(0.5**0.5)
-
-            conv2_out  = model.encoder.convolutions[1](residual1)
-
-
-
-
-
-
-
-
-
-
             translations = task.inference_step(generator, models, sample)
-            for i, (id,
-                    hypos) in enumerate(zip(batch.ids.tolist(), translations)):
+            for i, (id, hypos) in enumerate(zip(batch.ids.tolist(), translations)):
                 src_tokens_i = utils.strip_pad(src_tokens[i], tgt_dict.pad())
                 results.append((start_id + id, src_tokens_i, hypos))
 
         # sort output to match input order
         for id, src_tokens, hypos in sorted(results, key=lambda x: x[0]):
+
+
             if src_dict is not None:
                 src_str = src_dict.string(src_tokens, args.remove_bpe)
 
@@ -232,8 +189,7 @@ def main(args):
             for hypo in hypos[:min(len(hypos), args.nbest)]:
                 hypo_tokens, hypo_str, alignment = utils.post_process_prediction(
                     hypo_tokens=hypo['tokens'].int().cpu(),
-                    src_str=inputs[0],
-                    # src_str=src_str,
+                    src_str=src_str,
                     alignment=hypo['alignment'],
                     align_dict=align_dict,
                     tgt_dict=tgt_dict,
@@ -241,13 +197,8 @@ def main(args):
                 )
                 detok_hypo_str = decode_fn(hypo_str)
                 score = hypo['score'] / math.log(2)  # convert to base 2
-                # original hypothesis (after tokenization and BPE)
-                # detokenized hypothesis
-
-
-
-
                 print(detok_hypo_str)
+
 
         # update running id counter
         start_id += len(inputs)

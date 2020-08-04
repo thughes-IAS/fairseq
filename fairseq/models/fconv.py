@@ -264,14 +264,10 @@ class FConvEncoder(FairseqEncoder):
 
 
 
-            import ipdb;ipdb.set_trace()
-
             if residual is not None:
                 x = (x + residual) * math.sqrt(0.5)
             residuals.append(x)
-            import ipdb;ipdb.set_trace()
 
-        import ipdb;ipdb.set_trace()
 
 
         # T x B x C -> B x T x C
