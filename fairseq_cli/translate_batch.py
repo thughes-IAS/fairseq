@@ -9,6 +9,7 @@ Translate raw text with a trained model. Batches data on-the-fly.
 
 # Standard Library
 import fileinput
+import subprocess
 import math
 import os
 import re
@@ -44,15 +45,28 @@ def page_read(input, *args):
                 buffer = []
 
 
-def buffered_read(input, buffer_size):
+def buffered_read(input, buffer_size, pagesplit=False):
     buffer = []
     with fileinput.input(files=[input],
                          openhook=fileinput.hook_encoded("utf-8")) as h:
         for src_str in h:
 
+
+
+            if pagesplit:
+                fragments = re.split('\.|\n', src_str.rstrip())
+            
+            else:
+                fragments = [src_str.rstrip()]
+
+
+
+
             # buffer.append(src_str.strip())
             # for fragment in re.split('\.|\n',src_str.rstrip()):
-            for fragment in re.split('\.|\n', src_str.rstrip()):
+
+            for fragment in fragments:
+
                 if fragment:
                     buffer.append(fragment)
 
@@ -167,7 +181,13 @@ def main(args):
 
     start_id = 0
 
-    for inputs in buffered_read(args.input, args.buffer_size):
+
+    total=int(subprocess.check_output('wc -l ' + args.input,shell=True).decode().split()[0])
+
+    total_batches = math.ceil(total/args.buffer_size)
+
+    for inputs in tqdm(buffered_read(args.input, args.buffer_size, pagesplit=args.pagesplit),total=total_batches):
+
         results = []
         for batch,tokenized in make_batches(inputs, args, task, max_positions, encode_fn):
 
@@ -222,6 +242,7 @@ def main(args):
 
 def cli_main():
     parser = options.get_interactive_generation_parser()
+    parser.add_argument('--pagesplit',action='store_true')
     args = options.parse_args_and_arch(parser)
     distributed_utils.call_main(args, main)
 
