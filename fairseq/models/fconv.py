@@ -88,6 +88,8 @@ class FConvModel(FairseqEncoderDecoderModel):
                             help='share input and output embeddings (requires'
                                  ' --decoder-out-embed-dim and --decoder-embed-dim'
                                  ' to be equal)')
+
+        parser.add_argument('--max-positions', default=1024,help='Maximum sequence length',type=int)
         # fmt: on
 
     @classmethod
