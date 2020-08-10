@@ -92,9 +92,24 @@ def make_batches(lines, args, task, max_positions, encode_fn):
         for tokenized_line in tokenized
     ]
 
-    lengths = [t.numel() for t in tokens]
+
+    original_lengths = [t.numel() for t in tokens]
+    corrected = []
+
+    for token in tokens:
+        if token.numel() > max_positions[0]:
+            token = token[:max_positions[0]]
+
+        corrected.append(token)
+
+    # tokens=corrected
+    lengths = [t.numel() for t in corrected]
+
+
+
+
     itr = task.get_batch_iterator(
-        dataset=task.build_dataset_for_inference(tokens, lengths),
+        dataset=task.build_dataset_for_inference(corrected, lengths),
         max_tokens=args.max_tokens,
         max_sentences=args.max_sentences,
         max_positions=max_positions,
@@ -186,9 +201,13 @@ def main(args):
 
     total_batches = math.ceil(total/args.buffer_size)
 
+
+
+
     for inputs in tqdm(buffered_read(args.input, args.buffer_size, pagesplit=args.pagesplit),total=total_batches):
 
         results = []
+
         for batch,tokenized in make_batches(inputs, args, task, max_positions, encode_fn):
 
 
