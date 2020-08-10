@@ -215,8 +215,6 @@ def main(args):
 
 
 
-
-
             translations = task.inference_step(generator, models, sample)
             for i, (id,
                     hypos) in enumerate(zip(batch.ids.tolist(), translations)):

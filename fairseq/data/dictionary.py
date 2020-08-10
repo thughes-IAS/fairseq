@@ -298,14 +298,25 @@ class Dictionary(object):
         consumer=None,
         append_eos=True,
         reverse_order=False,
+        max_positions=None
     ):
         words = line_tokenizer(line)
+
+        if max_positions is not None:
+            words=words[:max_positions-1] 
         if reverse_order:
             words = list(reversed(words))
+
         nwords = len(words)
+
         ids = torch.IntTensor(nwords + 1 if append_eos else nwords)
 
         for i, word in enumerate(words):
+
+
+
+
+
             if add_if_not_exist:
                 idx = self.add_symbol(word)
             else:
